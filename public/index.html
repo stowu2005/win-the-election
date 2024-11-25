@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8">
+    <title> Name all the counties! </title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<html>
+<!-- Imports -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://d3js.org/topojson.v2.min.js"></script>
+
+<body>
+    <div>
+        <p> The number of counties named is: <span id="counties_named">0</span></p>
+        <p style="text-align:center;">The total population of counties named is: <span id="total_population">0</span></p>
+        <form style="text-align:center;" action="javascript:submit()">
+            <label for="input_bar">Type a county:</label><br/>
+            <input type="text" id="input_bar" name="input_bar"><br/>
+        </form>
+        <p style="text-align:center;" id="Error"><br/></p>
+    <br/>
+    </div>
+    <div class="svg-container">
+        <svg id="map" style="text-align:center;"></svg>
+    </div>
+    <script src="main.js"></script>
+
+
+</body>
+</html>
