@@ -16,7 +16,7 @@ async function fetchJSONData() {
         if (!res.ok) {
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
-        mapped_data = new Map(Array.from(data, d => [d.county_fips, (({ county, state_name, population }) => ({ county, state_name, population }))(d)]))
+        mapped_data = new Map(Array.from(data, d => [d.county_fips, (({ county, county_full, state_name, population }) => ({ county, county_full, state_name, population }))(d)]))
         data.forEach(d => {
             // Remove all non-alpha characters and convert string to lowercase
             const key = d.county.toLowerCase().replace(/[^a-zA-Z]+/g, '');            
@@ -28,7 +28,7 @@ async function fetchJSONData() {
         });
         us = await res.json();
 
-        const width = 1000;
+        const width = 1200;
         const height = 1000;
 
         const zoom = d3.zoom()
@@ -51,6 +51,17 @@ async function fetchJSONData() {
         .join("path")
             .on("click", clicked)
             .on("mouseover", hover)
+            .on("mouseout", function (event, d) {
+                tooltip.style("opacity", 0);
+                if (curr !== d.id) {
+                    d3.select(this).transition()
+                        .style("stroke", null)
+                } else {
+                    d3.select(this).transition()
+                        .style("stroke", "blue")
+                        .attr("stroke-width", 1.5)
+                }
+            })
             .attr("d", path);
 
         counties_array = counties._groups[0];
@@ -70,6 +81,20 @@ async function fetchJSONData() {
             .attr("stroke-width", 0.3)
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.counties, (a, b) => a !== b)));
+        
+        // County tooltip
+        let tooltip = svg.append("g")
+            .style("opacity", 0)
+            .style("pointer-events", "none")
+            .style("position", "absolute")
+
+        let tooltip_rect = tooltip.append("rect")
+            .attr("fill", "red")
+            .style("stroke", "black")
+
+        let tooltip_text = tooltip.append("text")
+            .attr("text-anchor", "middle")
+            .attr("fill", "white");
 
         svg.call(zoom);
 
@@ -114,6 +139,42 @@ async function fetchJSONData() {
         }
 
         function hover(event, d) {
+            zoom_dim = d3.zoomTransform(svg.node())
+            mapped_data_county = mapped_data.get(d.id)
+            tooltip_text.selectAll("tspan").remove();
+            if (named_counties.has(mapped_data_county.county.toLowerCase().replace(/[^a-zA-Z]+/g, ''))) {
+                const [[x0, y0], [x1, y1]] = path.bounds(d);
+                squared_amt = Math.sqrt(zoom_dim.k)
+                box_width =  112 * squared_amt
+                box_height = 70 * squared_amt
+                console.log(squared_amt)
+                tooltip_rect
+                    .attr("width", box_width)
+                    .attr("height", box_height)
+                    .attr("rx", 5 * squared_amt)
+                    .attr("ry", 5 * squared_amt)
+                    .attr("stroke-width", 1 + (squared_amt));
+                tooltip
+                    .style("opacity", 0.8)
+                    .attr("transform", `translate(${event.offsetX}, ${event.offsetY - 50})`);
+                tooltip_text
+                    .attr("font-size", 8 * Math.sqrt(zoom_dim.k))
+                    .append("tspan")
+                    .text(`County: ${mapped_data_county.county_full}`)
+                    .attr("y", box_height * 1/4)
+                    .attr("x", box_width / 2)
+                    .append("tspan")
+                    .text(`State: ${mapped_data_county.state_name}`)
+                    .attr("y", box_height * 2/4)
+                    .attr("x", box_width / 2)
+                    .append("tspan")
+                    .text(`Population: ${mapped_data_county.population.replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")}`)
+                    .attr("y", box_height * 3/4)
+                    .attr("x", box_width / 2)
+            }
+            d3.select(this).transition()
+                .style("stroke", "black")
+                .attr("stroke-width", 3.75 / (Math.cbrt(zoom_dim.k)))
         }
 
     } catch (error) {
@@ -135,13 +196,13 @@ function submit() {
     fips = name_to_fips.get(input)
     d_list = counties_array.filter((d) => fips.includes(d.__data__.id))
     for (const d of d_list) {
-        console.log(mapped_data.get(d.__data__.id))
         total_pop += parseInt(mapped_data.get(d.__data__.id).population)
         total_counties += 1
         d3.select(d).transition()
             .style("fill", "red")
             .attr("stroke-width", 1.5);
     }
+    named_counties.set(input, d_list)
 
     document.getElementById("counties_named").innerHTML = total_counties.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,&thinsp;");
     document.getElementById("total_population").innerHTML = total_pop.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,&thinsp;");
