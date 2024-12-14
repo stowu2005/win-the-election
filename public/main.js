@@ -17,15 +17,20 @@ async function fetchJSONData() {
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
         mapped_data = new Map(Array.from(data, d => [d.county_fips, (({ county, county_full, state_name, population }) => ({ county, county_full, state_name, population }))(d)]))
+        tot = 0
+        moss = 0
         data.forEach(d => {
-            // Remove all non-alpha characters and convert string to lowercase
             const key = d.county.toLowerCase().replace(/[^a-zA-Z]+/g, '');            
             if (!name_to_fips.has(key)) {
                 name_to_fips.set(key, [d.county_fips]);
             } else {
                 name_to_fips.get(key).push(d.county_fips)
             }
+            moss += 1
+            tot += parseInt(d.population)
         });
+        console.log(tot)
+        console.log(moss)
         us = await res.json();
 
         const width = 1200;
@@ -53,20 +58,13 @@ async function fetchJSONData() {
             .on("mouseover", hover)
             .on("mouseout", function (event, d) {
                 tooltip.style("opacity", 0);
-                if (curr !== d.id) {
-                    d3.select(this).transition()
-                        .style("stroke", null)
-                } else {
-                    d3.select(this).transition()
-                        .style("stroke", "blue")
-                        .attr("stroke-width", 1.5)
-                }
+                d3.select(this).transition()
+                        .style("opacity", 1)
             })
             .attr("d", path);
 
         counties_array = counties._groups[0];
         
-        // Outline states
         g.append("path")
             .attr("fill", "none")
             .attr("stroke", "white")
@@ -74,7 +72,6 @@ async function fetchJSONData() {
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b)));
         
-        // Outline counties
         g.append("path")
             .attr("fill", "none")
             .attr("stroke", "white")
@@ -82,7 +79,6 @@ async function fetchJSONData() {
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.counties, (a, b) => a !== b)));
         
-        // County tooltip
         let tooltip = svg.append("g")
             .style("opacity", 0)
             .style("pointer-events", "none")
@@ -122,6 +118,7 @@ async function fetchJSONData() {
             d3.select(this).transition()
                 .style("stroke", "blue")
                 .attr("stroke-width", 1.5);
+
             svg.transition().duration(750).call(
                 zoom.transform,
                 d3.zoomIdentity
@@ -130,6 +127,7 @@ async function fetchJSONData() {
                 .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
                 d3.pointer(event, svg.node())
             );
+            d3.select(this).raise();
         }
 
         function zoomed(event) {
@@ -139,6 +137,9 @@ async function fetchJSONData() {
         }
 
         function hover(event, d) {
+            this_county = d3.select(this)
+            this_county.transition()
+                .style("opacity", 0.4)
             zoom_dim = d3.zoomTransform(svg.node())
             mapped_data_county = mapped_data.get(d.id)
             tooltip_text.selectAll("tspan").remove();
@@ -147,7 +148,6 @@ async function fetchJSONData() {
                 squared_amt = Math.sqrt(zoom_dim.k)
                 box_width =  112 * squared_amt
                 box_height = 70 * squared_amt
-                console.log(squared_amt)
                 tooltip_rect
                     .attr("width", box_width)
                     .attr("height", box_height)
@@ -172,9 +172,6 @@ async function fetchJSONData() {
                     .attr("y", box_height * 3/4)
                     .attr("x", box_width / 2)
             }
-            d3.select(this).transition()
-                .style("stroke", "black")
-                .attr("stroke-width", 3.75 / (Math.cbrt(zoom_dim.k)))
         }
 
     } catch (error) {
