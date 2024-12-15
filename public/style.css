@@ -3,3 +3,7 @@ p {
     margin-bottom: 2px;
     text-align: center;
 }
+
+#input_bar {
+    width: 20vw;
+}

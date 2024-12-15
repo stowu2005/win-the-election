@@ -50,6 +50,9 @@ async function fetchJSONData() {
 
         counties = g.append("g")
             .attr("fill", "#444")
+            .attr("stroke", "white")
+            .attr("stroke-linejoin", "round")
+            .attr("stroke-width", 0.3)
             .attr("cursor", "pointer")
         .selectAll("path")
         .data(topojson.feature(us, us.objects.counties).features)
@@ -72,12 +75,6 @@ async function fetchJSONData() {
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b)));
         
-        g.append("path")
-            .attr("fill", "none")
-            .attr("stroke", "white")
-            .attr("stroke-width", 0.3)
-            .attr("stroke-linejoin", "round")
-            .attr("d", path(topojson.mesh(us, us.objects.counties, (a, b) => a !== b)));
         
         let tooltip = svg.append("g")
             .style("opacity", 0)
@@ -95,7 +92,9 @@ async function fetchJSONData() {
         svg.call(zoom);
 
         function reset() {
-            counties.transition().style("stroke", null);
+            counties.transition()
+                .style("stroke", "white")
+                .attr("stroke-width", 0.3);
             svg.transition().duration(750).call(
                 zoom.transform,
                 d3.zoomIdentity,
@@ -114,7 +113,7 @@ async function fetchJSONData() {
 
             const [[x0, y0], [x1, y1]] = path.bounds(d);
             event.stopPropagation();
-            counties.transition().style("stroke", null);
+            counties.transition().style("stroke", "white").attr("stroke-width", 0.3);
             d3.select(this).transition()
                 .style("stroke", "blue")
                 .attr("stroke-width", 1.5);
@@ -146,7 +145,7 @@ async function fetchJSONData() {
             if (named_counties.has(mapped_data_county.county.toLowerCase().replace(/[^a-zA-Z]+/g, ''))) {
                 const [[x0, y0], [x1, y1]] = path.bounds(d);
                 squared_amt = Math.sqrt(zoom_dim.k)
-                box_width =  112 * squared_amt
+                box_width =  128 * squared_amt
                 box_height = 70 * squared_amt
                 tooltip_rect
                     .attr("width", box_width)
@@ -196,8 +195,7 @@ function submit() {
         total_pop += parseInt(mapped_data.get(d.__data__.id).population)
         total_counties += 1
         d3.select(d).transition()
-            .style("fill", "red")
-            .attr("stroke-width", 1.5);
+            .style("fill", "red");
     }
     named_counties.set(input, d_list)
 
