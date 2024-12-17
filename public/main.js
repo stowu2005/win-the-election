@@ -7,6 +7,7 @@ var total_counties = 0
 let named_counties = new Map()
 let counties_array
 let input
+let outline_map
 
 
 async function fetchJSONData() {
@@ -74,6 +75,22 @@ async function fetchJSONData() {
             .attr("stroke-width", 1.2)
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b)));
+
+        outline = g.append("g")
+            .attr("fill", "none")
+            .attr("stroke", "blue")
+            .attr("stroke-linejoin", "round")
+            .attr("stroke-width", 0)
+            .attr("cursor", "pointer")
+        .selectAll("path")
+        .data(topojson.feature(us, us.objects.counties).features)
+        .join("path")
+            .attr("d", path);
+        outline_array = outline._groups[0]
+
+        outline_map = new Map(outline_array.map((d) => [d.__data__.id, d]))
+
+
         
         
         let tooltip = svg.append("g")
@@ -92,9 +109,8 @@ async function fetchJSONData() {
         svg.call(zoom);
 
         function reset() {
-            counties.transition()
-                .style("stroke", "white")
-                .attr("stroke-width", 0.3);
+            outline.transition()
+                .attr("stroke-width", 0);
             svg.transition().duration(750).call(
                 zoom.transform,
                 d3.zoomIdentity,
@@ -113,9 +129,9 @@ async function fetchJSONData() {
 
             const [[x0, y0], [x1, y1]] = path.bounds(d);
             event.stopPropagation();
-            counties.transition().style("stroke", "white").attr("stroke-width", 0.3);
-            d3.select(this).transition()
-                .style("stroke", "blue")
+            outline.transition().attr("stroke-width", 0);
+            state_outline = outline_map.get(d.id)
+            d3.select(state_outline).transition()
                 .attr("stroke-width", 1.5);
 
             svg.transition().duration(750).call(
@@ -126,7 +142,7 @@ async function fetchJSONData() {
                 .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
                 d3.pointer(event, svg.node())
             );
-            d3.select(this).raise();
+            d3.select(state_outline).raise();
         }
 
         function zoomed(event) {
@@ -199,9 +215,8 @@ function submit() {
     }
     named_counties.set(input, d_list)
 
-    document.getElementById("counties_named").innerHTML = total_counties.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,&thinsp;");
-    document.getElementById("total_population").innerHTML = total_pop.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,&thinsp;");
-
+    document.getElementById("counties_named").innerHTML = total_counties.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
+    document.getElementById("total_population").innerHTML = total_pop.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
     document.getElementById("input_bar").value = "";
 }
 
