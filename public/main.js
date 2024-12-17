@@ -211,7 +211,7 @@ function submit() {
             .style("fill", "red");
     }
     named_counties.set(input, d_list)
-    barchart(total_counties, 3142, "#bar-chart", "counties")
+    barchart(total_counties, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining")
     barchart(total_pop, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining")
 
 
