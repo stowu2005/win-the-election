@@ -242,6 +242,11 @@ function barchart(percentage, total_percentage, bar_chart, label1, label2) {
         .style('position', 'absolute')
         .style('border-radius', '25px')
         .style('left', '30vw');
+    
+    chart.append('div')
+        .attr('class', 'vl')
+        .style('position', 'absolute')
+        .style('left', '50vw');
 
     let tooltip = chart
         .append("div")
