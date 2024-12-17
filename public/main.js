@@ -90,7 +90,8 @@ async function fetchJSONData() {
 
         outline_map = new Map(outline_array.map((d) => [d.__data__.id, d]))
 
-
+        barchart(0, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining")
+        barchart(0, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining")
         
         
         let tooltip = svg.append("g")
@@ -214,6 +215,9 @@ function submit() {
             .style("fill", "red");
     }
     named_counties.set(input, d_list)
+    barchart(total_counties, 3142, "#bar-chart", "counties")
+    barchart(total_pop, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining")
+
 
     document.getElementById("counties_named").innerHTML = total_counties.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
     document.getElementById("total_population").innerHTML = total_pop.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
@@ -221,3 +225,60 @@ function submit() {
 }
 
 fetchJSONData()
+
+
+
+function barchart(percentage, total_percentage, bar_chart, label1, label2) {
+    rest_of_bar = (total_percentage - percentage)
+    const chart = d3.select(`${bar_chart}`);
+    chart.selectAll('*').remove();
+    county_percentage = (100 * percentage/total_percentage).toFixed(2)
+    
+    const x = d3.scaleLinear()
+        .domain([0, total_percentage])
+        .range([0, 2000]);
+
+    const svg = chart.append('svg')
+        .attr('width', `40vw`)
+        .attr('height', "2vw")
+        .attr('viewBox',`0 0 2000 100`)
+        .attr('preserveAspectRatio', "xMidYMid meet")
+        .style('position', 'absolute')
+        .style('border-radius', '25px')
+        .style('left', '30vw');
+
+    let tooltip = chart
+        .append("div")
+        .attr('class', 'bartooltip')
+
+    const data = [
+        { label: `${label1}`, value: percentage, left: 0, color: 'red', percentage: `(${county_percentage}\%)`},
+        { label: `${label2}`, value: rest_of_bar, left: percentage, color: '#444', percentage: `(${100 - county_percentage}\%)`}, 
+    ];
+
+    svg.selectAll('.bar')
+        .data(data)
+        .enter()
+        .append('rect')
+        .attr('class', 'bar')
+        .attr('x', (d) => x(d.left))
+        .attr('width', (d) => x(d.value))
+        .attr('height', 100)
+        .attr('fill', (d) => d.color)
+        .on("mouseenter", function (event, d) {
+            if (d.value != 0) {            
+                tooltip
+                    .style("opacity", 0.8)
+                    .style("background-color", d.color)
+                tooltip.html(
+                        `<b>${(d.label)}:</b> ${(d.value.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,"))} ${d.percentage}<br/>`
+                        )
+            }
+    }).on("mousemove", function (event) {
+        tooltip.style('top', (event.pageY - 20) + 'px')
+            .style('left', (event.pageX + 10) + 'px');
+    }).on("mouseout", function () {
+        tooltip.style("opacity", 0);
+    });
+    return
+  }

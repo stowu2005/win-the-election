@@ -7,3 +7,20 @@ p {
 #input_bar {
     width: 20vw;
 }
+
+.bartooltip {
+    position: absolute;
+    text-align: center;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#bar-chart {
+    margin: auto;
+}
+
+#svg-container
