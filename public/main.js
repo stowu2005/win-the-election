@@ -18,8 +18,6 @@ async function fetchJSONData() {
             throw new Error(`HTTP error! Status: ${res.status}`);
         }
         mapped_data = new Map(Array.from(data, d => [d.county_fips, (({ county, county_full, state_name, population }) => ({ county, county_full, state_name, population }))(d)]))
-        tot = 0
-        moss = 0
         data.forEach(d => {
             const key = d.county.toLowerCase().replace(/[^a-zA-Z]+/g, '');            
             if (!name_to_fips.has(key)) {
@@ -27,11 +25,7 @@ async function fetchJSONData() {
             } else {
                 name_to_fips.get(key).push(d.county_fips)
             }
-            moss += 1
-            tot += parseInt(d.population)
         });
-        console.log(tot)
-        console.log(moss)
         us = await res.json();
 
         const width = 1200;
@@ -42,8 +36,10 @@ async function fetchJSONData() {
             .on("zoom", zoomed);
 
         const svg = d3.select("#map")
-            .attr("width", width)
-            .attr("height", height);
+            .attr("width", "72vw")
+            .attr("height", "60vw")
+            .attr('viewBox',`-100 0 ${width} ${height}`)
+            .attr('preserveAspectRatio', "xMidYMid meet");
 
         const path = d3.geoPath();
 

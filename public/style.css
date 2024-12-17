@@ -23,4 +23,7 @@ p {
     margin: auto;
 }
 
-#svg-container
+.svg-container {
+    display: flex;
+    justify-content: center;
+}
