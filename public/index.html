@@ -14,20 +14,22 @@
 
 <body>
     <div>
-        <p> The number of counties named is: <span id="counties_named">0</span></p>
+        <p> The number of counties named is: <span id="counties_named">0</span> / 3,142</p>
         <div id="bar-chart" style="margin-bottom: 2.5vw;"></div>
-        <p style="text-align:center;">The total population of counties named is: <span id="total_population">0</span></p>
+        <p style="text-align:center;">The total population of counties named is: <span id="total_population">0</span> / 331,092,220</p>
         <div id="pop-chart" style="margin-bottom: 2.5vw;"></div>
         <form style="text-align:center;" action="javascript:submit()" autocomplete="off">
             <label for="input_bar">Type a county:</label><br/>
             <input type="text" id="input_bar" name="input_bar" placeholder="e.g. &quot;Los Angeles&quot;, &quot;Cook&quot;"><br/>
         </form>
-        <p style="text-align:center;" id="Error"><br/></p>
+        <p style="text-align:center; margin-bottom: -.5vw;" id="Error"><br/></p>
     <br/>
     </div>
     <div class="svg-container">
         <svg id="map"></svg>
     </div>
+    <p style="text-align:center; margin-top: 2.5vw;"><span id="total_votes">The total electoral votes won is: 0 / 538</span></p>
+        <div id="vote-chart" style="margin-bottom: 2.5vw;"></div>
     <script src="main.js"></script>
 
 
