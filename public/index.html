@@ -25,9 +25,21 @@
         <p style="text-align:center; margin-bottom: -.5vw;" id="Error"><br/></p>
     <br/>
     </div>
-    <div class="svg-container">
-        <svg id="map"></svg>
+    <div class="svg-container" id="svg-map-container">
+        <svg id="map">
+            <pattern id="diagonalHatch" patternUnits="userSpaceOnUse" width="32" height="32">
+                <rect width="32" height="32" fill="red" />
+                <path d="M-8,8 l16,-16
+                        M0,32 l32,-32
+                        M24,40 l16,-16"
+                      style="stroke:yellow; stroke-width:8;" />
+              </pattern>
+        </svg>
     </div>
+    <div id="checkbox-div">
+    <input type="checkbox" id="prev_named" value="Yes" checked="true" style="text-align:center;">
+  <label for="prev_named"> Show Last Named Counties</label>
+  </div>
     <p style="text-align:center; margin-top: 2.5vw;"><span id="total_votes">The total electoral votes won is: 0 / 538</span></p>
         <div id="vote-chart" style="margin-bottom: 2.5vw;"></div>
     <script src="main.js"></script>

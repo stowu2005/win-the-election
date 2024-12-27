@@ -17,6 +17,7 @@ p {
     font-size: 12px;
     opacity: 0;
     pointer-events: none;
+    background-color: #444;
 }
 
 #bar-chart {
@@ -32,3 +33,21 @@ p {
     border-left: 2px solid rgb(255, 255, 255);
     height: 2vw;
 }
+
+.maptooltip {
+    position: absolute;
+    text-anchor: middle;
+    opacity: 0;
+    pointer-events: none;
+    outline-color: black;
+    color: white;
+    outline-style: solid;
+}
+
+#checkbox-div {
+    display: flex;
+    justify-content: center;
+    margin-bottom: -2vw;
+    margin-top: 0.5vw;
+}
+

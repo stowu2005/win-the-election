@@ -16,6 +16,10 @@ let named_states = new Map()
 let state_electoral_votes
 let total_electoral_votes = 0
 let curr_state = null
+let map_tooltip
+let checked = true
+
+
 
 async function fetchJSONData() {
     try {
@@ -69,25 +73,36 @@ async function fetchJSONData() {
         .data(topojson.feature(us, us.objects.counties).features)
         .join("path")
             .on("click", clicked)
-            .on("mouseover", hover)
+            .on("mouseenter", hover)
+            .on("mousemove", function (event, d) {
+                map_tooltip.style('top', (event.pageY - 60) + 'px')
+                .style('left', (event.pageX + 10) + 'px');
+            })
             .on("mouseout", function (event, d) {
-                tooltip.style("opacity", 0);
+                map_tooltip.style("opacity", 0);
                 d3.select(this).transition()
                         .style("opacity", 1)
             })
             .attr("d", path);
 
         counties_array = counties._groups[0];
+
         
         const states = g.append("g")
+            .selectAll("path")
+            .data(topojson.feature(us, us.objects.states).features)
+            .join("path")
+            .attr("d", path)
+            .style("pointer-events", "none")
+            .style("fill", "none")
+            .style("opacity", 0.2);
+        
+        g.append("path")
             .attr("fill", "none")
             .attr("stroke", "white")
             .attr("stroke-width", 1.2)
             .attr("stroke-linejoin", "round")
-            .selectAll("path")
-            .data(topojson.feature(us, us.objects.states).features)
-            .join("path")
-            .attr("d", path);
+            .attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b)));
 
         const states_array = states._groups[0]
         states_map = new Map(states_array.map((d) => [d.__data__.properties.name, d]))
@@ -106,23 +121,12 @@ async function fetchJSONData() {
 
         outline_map = new Map(outline_array.map((d) => [d.__data__.id, d]))
 
-        barchart(0, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining")
-        barchart(0, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining")
-        barchart(0, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining")
+        barchart(0, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining", 0, "Number of counties last named")
+        barchart(0, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining", 0, "Population of counties last named")
+        barchart(0, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining", 0, "")
 
-        
-        let tooltip = svg.append("g")
-            .style("opacity", 0)
-            .style("pointer-events", "none")
-            .style("position", "absolute")
-
-        let tooltip_rect = tooltip.append("rect")
-            .attr("fill", "red")
-            .style("stroke", "black")
-
-        let tooltip_text = tooltip.append("text")
-            .attr("text-anchor", "middle")
-            .attr("fill", "white");
+        map_tooltip = d3.select('#svg-map-container').append("div")
+        .attr("class", "maptooltip")
 
         svg.call(zoom);
 
@@ -134,7 +138,7 @@ async function fetchJSONData() {
                 d3.zoomIdentity,
                 d3.zoomTransform(svg.node()).invert([width / 2, height / 2])
             );
-            barchart(total_electoral_votes, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining")
+            barchart(total_electoral_votes, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining", 0, "")
             document.getElementById("total_votes").innerHTML = `The total electoral votes won is: ${total_electoral_votes} / 538`;
         }
 
@@ -159,16 +163,12 @@ async function fetchJSONData() {
                 d3.zoomIdentity
                 .translate(width / 2, height / 2)
                 .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
-                .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
+                .translate(-(x0 + x1) / 2 - 12, -(y0 + y1) / 2 - 24),
                 d3.pointer(event, svg.node())
             );
             d3.select(state_outline).raise();
             curr_state = mapped_data.get(d.id).state_name
-            let state_gotten = state_population_gotten.get(curr_state)
-            let state_total = state_totals.get(curr_state)
-            barchart(state_gotten, state_total, "#vote-chart", "Total population of counties guessed in " + curr_state, "Population remaining in " + curr_state)
-            document.getElementById("total_votes").innerHTML = `The total population of counties named in ${curr_state} is: 
-                ${state_gotten.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")} / ${state_total.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")}`;
+            setLowerBarChart();
         }
 
         function zoomed(event) {
@@ -179,46 +179,41 @@ async function fetchJSONData() {
 
         function hover(event, d) {
             this_county = d3.select(this)
-            this_county.transition()
-                .style("opacity", 0.4)
+            let tooltip_opacity = 0.8
+            if (this_county.style('fill') === "rgb(255, 255, 0)") {
+                this_county.transition()
+                .style("opacity", 0)
+                map_tooltip
+                .style("background-color", "rgb(155, 155, 0)");
+                tooltip_opacity = 0.9
+
+            } else {
+                this_county.transition()
+                .style("opacity", 0.4);
+                map_tooltip
+                .style("background-color", "red");
+            }
             zoom_dim = d3.zoomTransform(svg.node())
             mapped_data_county = mapped_data.get(d.id)
-            tooltip_text.selectAll("tspan").remove();
             if (named_counties.has(mapped_data_county.county.toLowerCase().replace(/[^a-zA-Z]+/g, ''))) {
-                const [[x0, y0], [x1, y1]] = path.bounds(d);
                 squared_amt = Math.sqrt(zoom_dim.k)
                 box_width =  128 * squared_amt
                 box_height = 70 * squared_amt
-                tooltip_rect
-                    .attr("width", box_width)
-                    .attr("height", box_height)
-                    .attr("rx", 5 * squared_amt)
-                    .attr("ry", 5 * squared_amt)
-                    .attr("stroke-width", 1 + (squared_amt));
-                const fixedTranslation = 10 / zoom_dim.k;
-                console.log(zoom_dim)
-                tooltip
-                    .style("opacity", 0.8)
-                    .attr("transform", `translate(${(event.offsetX - zoom_dim.x)/zoom_dim.k + fixedTranslation}
-                        , ${(event.offsetY - zoom_dim.y)/zoom_dim.k + fixedTranslation})`);
-                console.log(event.offsetX)
-                console.log(event.pageX)
-                console.log(event.offsetX + event.offsetX * 0.02 * (squared_amt - 2.8284271247461903))
-
-                tooltip_text
-                    .attr("font-size", 8 * Math.sqrt(zoom_dim.k))
-                    .append("tspan")
-                    .text(`County: ${mapped_data_county.county_full}`)
-                    .attr("y", box_height * 1/4)
-                    .attr("x", box_width / 2)
-                    .append("tspan")
-                    .text(`State: ${mapped_data_county.state_name}`)
-                    .attr("y", box_height * 2/4)
-                    .attr("x", box_width / 2)
-                    .append("tspan")
-                    .text(`Population: ${mapped_data_county.population.replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")}`)
-                    .attr("y", box_height * 3/4)
-                    .attr("x", box_width / 2)
+                map_tooltip
+                    .style("width", box_width + "px")
+                    .style("height", box_height + "px")
+                    .style("border-radius", 5 * squared_amt + "px")
+                    .style("outline-width", 1 + (squared_amt) + "px")
+                    .style("opacity", tooltip_opacity)
+                    .style("font-size", (8 * Math.sqrt(zoom_dim.k) + "px"))
+                map_tooltip.html(
+                    `</br>
+                    <p>County: ${mapped_data_county.county_full}</p>
+                    </br>
+                    <p>State: ${mapped_data_county.state_name}</p>
+                    </br>
+                    <p>Population: ${mapped_data_county.population.replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")}</p>`
+                )
           }
         }
 
@@ -245,44 +240,56 @@ function submit() {
             .style("fill", "red");
     }
     prev_named_counties = d_list
+    let prev_named = 0
+    let prev_named_pop = 0
     let county_states = []
     for (const d of d_list) {
         d_county = mapped_data.get(d.__data__.id)
-        county_pop = parseInt(d_county.population)
+        let county_pop = parseInt(d_county.population)
+        prev_named_pop += county_pop
+        prev_named += 1
         county_states.push(d_county.state_name)
-        total_pop += county_pop
-        total_counties += 1
         state_population_gotten.set(d_county.state_name, state_population_gotten.get(d_county.state_name) + county_pop)
-        d3.select(d).transition()
-            .style("fill", "#b6b004");
+        if (checked) {
+            d3.select(d).transition()
+            .style("fill", "yellow");
+        } else {
+            d3.select(d).transition()
+            .style("fill", "red");
+        }
     }
+    total_pop += prev_named_pop
+    total_counties += prev_named
     for (const state of county_states) {
         if (!named_states.has(state)) {
             if (state_population_gotten.get(state) * 2 >= state_totals.get(state)) {
                 named_states.set(state, 1)
                 total_electoral_votes += state_electoral_votes.get(state)
-                got_state = states_map.get(state)
-                d3.select(got_state).transition().style("stroke", "red");
-                d3.select(got_state).raise()
-
+                d3.select(states_map.get(state)).transition().style("fill", "red");
             }
         }
     }
     named_counties.set(input, d_list)
-    barchart(total_counties, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining")
-    barchart(total_pop, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining")
+    if (checked) {
+        barchart(total_counties, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining",
+            prev_named, "Number of counties last named")
+        barchart(total_pop, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining",
+            prev_named_pop, "Population of counties last named")
+    } else {
+        barchart(total_counties, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining",
+            0, "")
+        barchart(total_pop, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining",
+            0, "")
+
+    }
 
     document.getElementById("counties_named").innerHTML = total_counties.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
     document.getElementById("total_population").innerHTML = total_pop.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
     document.getElementById("input_bar").value = "";
     if (curr !== null) {
-        let state_gotten = state_population_gotten.get(curr_state)
-        let state_total = state_totals.get(curr_state)
-        barchart(state_gotten, state_total, "#vote-chart", "Total population of counties guessed in " + curr_state, "Population remaining in " + curr_state)
-        document.getElementById("total_votes").innerHTML = `The total population of counties named in ${curr_state} is: 
-            ${state_gotten.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")} / ${state_total.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")}`;
+        setLowerBarChart();
     } else {
-        barchart(total_electoral_votes, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining")
+        barchart(total_electoral_votes, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining", 0, "")
         document.getElementById("total_votes").innerHTML = `The total electoral votes won is: ${total_electoral_votes} / 538`;
     }
 
@@ -291,14 +298,34 @@ function submit() {
 
 fetchJSONData()
 
+function setLowerBarChart() {
+    let state_gotten = state_population_gotten.get(curr_state)
+    let state_total = state_totals.get(curr_state)
+    if (checked) {
+        let county_pop = 0
+        for (const d of prev_named_counties) {
+            d_county = mapped_data.get(d.__data__.id)
+            if (d_county.state_name === curr_state) {
+                county_pop += parseInt(d_county.population)
+            }
+        }
+        barchart(state_gotten, state_total, "#vote-chart", "Total population of counties guessed in " + curr_state, "Population remaining in " + curr_state,
+            county_pop, "Population of counties last named in " + curr_state)
+    } else {
+        barchart(state_gotten, state_total, "#vote-chart", "Total population of counties guessed in " + curr_state, "Population remaining in " + curr_state,
+            0, "")
+    }
+    document.getElementById("total_votes").innerHTML = `The total population of counties named in ${curr_state} is: 
+        ${state_gotten.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")} / ${state_total.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")}`;
+}
 
 
-function barchart(percentage, total_percentage, bar_chart, label1, label2) {
-    rest_of_bar = (total_percentage - percentage)
+
+function barchart(percentage, total_percentage, bar_chart, label1, label2, recent_percentage, label3) {
+    const rest_of_bar = (total_percentage - percentage)
     const chart = d3.select(`${bar_chart}`);
     chart.selectAll('*').remove();
-    county_percentage = (100 * percentage/total_percentage).toFixed(2)
-    
+    const bar_percentage = percentage - recent_percentage
     const x = d3.scaleLinear()
         .domain([0, total_percentage])
         .range([0, 2000]);
@@ -310,20 +337,28 @@ function barchart(percentage, total_percentage, bar_chart, label1, label2) {
         .attr('preserveAspectRatio', "xMidYMid meet")
         .style('position', 'absolute')
         .style('border-radius', '25px')
+        .style("outline-color", 'black')
+        .style("outline-style", "solid")
+        .style("outline-width", "2px")
         .style('left', '30vw');
     
     chart.append('div')
         .attr('class', 'vl')
         .style('position', 'absolute')
-        .style('left', '50vw');
+        .style('left', '50vw')
+        .style("pointer-events", "none");
 
     let tooltip = chart
         .append("div")
         .attr('class', 'bartooltip')
 
     const data = [
-        { label: `${label1}`, value: percentage, left: 0, color: 'red', percentage: `(${county_percentage}\%)`},
-        { label: `${label2}`, value: rest_of_bar, left: percentage, color: '#444', percentage: `(${100 - county_percentage}\%)`}, 
+        { label: `${label1}`, value: bar_percentage, left: 0, color: 'red',
+            percentage: `(${(100 * percentage/total_percentage).toFixed(2)}\%)`},
+        { label: `${label3}`, value: recent_percentage, left: bar_percentage, color: 'yellow',
+            percentage: `(${(100 * recent_percentage/total_percentage).toFixed(2)}\%)`},
+        { label: `${label2}`, value: rest_of_bar, left: percentage, color: '#444',
+            percentage: `(${(100 * rest_of_bar/total_percentage).toFixed(2)}\%)`}, 
     ];
 
     svg.selectAll('.bar')
@@ -334,21 +369,87 @@ function barchart(percentage, total_percentage, bar_chart, label1, label2) {
         .attr('x', (d) => x(d.left))
         .attr('width', (d) => x(d.value))
         .attr('height', 100)
-        .attr('fill', (d) => d.color)
+        .attr('fill', function (d) {
+            if (d.color === "yellow") {
+                return "url(#diagonalHatch)"
+            }
+            return d.color
+        })
         .on("mouseenter", function (event, d) {
+            let d_pop = d.value
+            d3.select(this).style("opacity", 0.4)
+            if (d.color === 'red') {
+                d_pop = percentage
+                d3.select(this.nextSibling).style("opacity", 0.4)
+            } else if (d.color === 'yellow') {
+                d3.select(this).style("opacity", 0.4)
+            }
             if (d.value != 0) {            
                 tooltip
-                    .style("opacity", 0.8)
-                    .style("background-color", d.color)
+                    .style("opacity", 0.9)
+                    .style("outline-color", d.color)
+                    .style("outline-style", "solid")
                 tooltip.html(
-                        `<b>${(d.label)}:</b> ${(d.value.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,"))} ${d.percentage}<br/>`
+                        `<b>${(d.label)}:</b> ${(d_pop.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,"))} ${d.percentage}<br/>`
                         )
             }
     }).on("mousemove", function (event) {
         tooltip.style('top', (event.pageY - 20) + 'px')
             .style('left', (event.pageX + 10) + 'px');
-    }).on("mouseout", function () {
+    }).on("mouseout", function (event, d) {
+        if (d.color === 'red') {
+            d3.select(this.nextSibling).style("opacity", 1)
+        }
+        d3.select(this).style("opacity", 1)
         tooltip.style("opacity", 0);
     });
-    return
-  }
+}
+
+d3.select("#prev_named").on("change", update);
+
+function update() {
+    checked = document.getElementById("prev_named").checked
+    if (checked === false) {
+        if (curr !== null) {
+            let state_gotten = state_population_gotten.get(curr_state)
+            let state_total = state_totals.get(curr_state)
+            barchart(state_gotten, state_total, "#vote-chart", "Total population of counties guessed in " + curr_state, "Population remaining in " + curr_state,
+                0, "")
+        }
+        for (const d of prev_named_counties) {
+            d3.select(d).transition()
+                .style("fill", "red");
+        }
+        barchart(total_counties, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining",
+        0, "")
+        barchart(total_pop, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining",
+        0, "")
+    } else {
+        if (curr !== null) {
+            let state_gotten = state_population_gotten.get(curr_state)
+            let state_total = state_totals.get(curr_state)
+            let county_pop = 0
+            for (const d of prev_named_counties) {
+                d_county = mapped_data.get(d.__data__.id)
+                if (d_county.state_name === curr_state) {
+                    county_pop += parseInt(d_county.population)
+                }
+            }
+            barchart(state_gotten, state_total, "#vote-chart", "Total population of counties guessed in " + curr_state, "Population remaining in " + curr_state,
+                county_pop, "Population of counties last named in " + curr_state)
+        }
+        let prev_named_pop = 0
+        let prev_named = 0
+        for (const d of prev_named_counties) {
+            prev_named += 1
+            prev_named_pop += parseInt(mapped_data.get(d.__data__.id).population)
+            d3.select(d).transition()
+                .style("fill", "yellow");
+        }
+        barchart(total_counties, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining",
+        prev_named, "Number of counties last named")
+        barchart(total_pop, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining",
+        prev_named_pop, "Population of counties last named")
+    }
+
+}
