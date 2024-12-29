@@ -6,9 +6,11 @@ var total_pop = 0
 var total_counties = 0
 let named_counties = new Map()
 let counties_array
+let counties
 let input
 let outline_map
 let states_map
+let states
 let prev_named_counties = []
 let state_totals = new Map()
 let state_population_gotten = new Map()
@@ -18,7 +20,8 @@ let total_electoral_votes = 0
 let curr_state = null
 let map_tooltip
 let checked = true
-
+let won = false
+let finished = false
 
 
 async function fetchJSONData() {
@@ -63,7 +66,7 @@ async function fetchJSONData() {
 
         const g = svg.append("g");
 
-        const counties = g.append("g")
+        counties = g.append("g")
             .attr("fill", "#444")
             .attr("stroke", "white")
             .attr("stroke-linejoin", "round")
@@ -73,14 +76,16 @@ async function fetchJSONData() {
         .data(topojson.feature(us, us.objects.counties).features)
         .join("path")
             .on("click", clicked)
-            .on("mouseenter", hover)
+            .on("mouseenter", function(event, d) {
+                hover(event, d, d3.select(this))
+            })
             .on("mousemove", function (event, d) {
                 map_tooltip.style('top', (event.pageY - 60) + 'px')
                 .style('left', (event.pageX + 10) + 'px');
             })
             .on("mouseout", function (event, d) {
                 map_tooltip.style("opacity", 0);
-                d3.select(this).transition()
+                d3.select(this)
                         .style("opacity", 1)
             })
             .attr("d", path);
@@ -88,7 +93,7 @@ async function fetchJSONData() {
         counties_array = counties._groups[0];
 
         
-        const states = g.append("g")
+        states = g.append("g")
             .selectAll("path")
             .data(topojson.feature(us, us.objects.states).features)
             .join("path")
@@ -116,7 +121,20 @@ async function fetchJSONData() {
         .selectAll("path")
         .data(topojson.feature(us, us.objects.counties).features)
         .join("path")
-            .attr("d", path);
+            .attr("d", path)
+            .on("click", clicked)
+            .on("mouseenter", function(event, d) {
+                hover(event, d, d3.select(counties_array.filter((d_) => d_.__data__.id === d.id)[0]))
+            })
+            .on("mousemove", function (event, d) {
+                map_tooltip.style('top', (event.pageY - 60) + 'px')
+                .style('left', (event.pageX + 10) + 'px');
+            })
+            .on("mouseout", function (event, d) {
+                map_tooltip.style("opacity", 0);
+                d3.select(counties_array.filter((d_) => d_.__data__.id === d.id)[0])
+                        .style("opacity", 1)
+            });
         const outline_array = outline._groups[0]
 
         outline_map = new Map(outline_array.map((d) => [d.__data__.id, d]))
@@ -177,25 +195,24 @@ async function fetchJSONData() {
             g.attr("stroke-width", 1 / transform.k);
         }
 
-        function hover(event, d) {
-            this_county = d3.select(this)
+        function hover(event, d, this_county) {
             let tooltip_opacity = 0.8
             if (this_county.style('fill') === "rgb(255, 255, 0)") {
-                this_county.transition()
+                this_county
                 .style("opacity", 0)
                 map_tooltip
                 .style("background-color", "rgb(155, 155, 0)");
                 tooltip_opacity = 0.9
 
             } else {
-                this_county.transition()
+                this_county
                 .style("opacity", 0.4);
                 map_tooltip
-                .style("background-color", "red");
+                .style("background-color", this_county.style('fill'));
             }
             zoom_dim = d3.zoomTransform(svg.node())
             mapped_data_county = mapped_data.get(d.id)
-            if (named_counties.has(mapped_data_county.county.toLowerCase().replace(/[^a-zA-Z]+/g, ''))) {
+            if (finished || named_counties.has(mapped_data_county.county.toLowerCase().replace(/[^a-zA-Z]+/g, ''))) {
                 squared_amt = Math.sqrt(zoom_dim.k)
                 box_width =  128 * squared_amt
                 box_height = 70 * squared_amt
@@ -260,12 +277,17 @@ function submit() {
     }
     total_pop += prev_named_pop
     total_counties += prev_named
+    let should_alert = false
     for (const state of county_states) {
         if (!named_states.has(state)) {
             if (state_population_gotten.get(state) * 2 >= state_totals.get(state)) {
                 named_states.set(state, 1)
                 total_electoral_votes += state_electoral_votes.get(state)
                 d3.select(states_map.get(state)).transition().style("fill", "red");
+                if (!won && total_electoral_votes >= 270) {
+                    won = true
+                    should_alert = true
+                }
             }
         }
     }
@@ -292,8 +314,11 @@ function submit() {
         barchart(total_electoral_votes, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining", 0, "")
         document.getElementById("total_votes").innerHTML = `The total electoral votes won is: ${total_electoral_votes} / 538`;
     }
-
-
+    setTimeout(function () {
+        if (should_alert) {
+            alert("Congratulations! You have won the election!");
+        }
+    }, 300);
 }
 
 fetchJSONData()
@@ -405,10 +430,11 @@ function barchart(percentage, total_percentage, bar_chart, label1, label2, recen
     });
 }
 
-d3.select("#prev_named").on("change", update);
+d3.select("#prev_named_btn").on("click", update);
 
 function update() {
-    checked = document.getElementById("prev_named").checked
+    checked = !(document.getElementById("prev_named").checked)
+    document.getElementById("prev_named").checked = checked
     if (checked === false) {
         if (curr !== null) {
             let state_gotten = state_population_gotten.get(curr_state)
@@ -453,3 +479,101 @@ function update() {
     }
 
 }
+
+d3.select("#clear_btn").on("click", clear);
+
+function clear() {
+    if (confirm("Are you sure you want to clear all counties? This action cannot be undone.")) {
+        won = false
+        if (finished) {
+            d3.select("#input-div").style("opacity", 1);
+            d3.select("#input-div").style("pointer-events", "auto");
+            d3.select("#Error").style("display", "block");
+            d3.select("#finish-text").style("display", "none");
+            d3.select("#website").style("display", "none");
+            d3.select("#website").style("font-size", "32px");
+            d3.select("#website").style("opacity", 1);
+        }
+        finished = false
+        state_population_gotten.forEach((value, key) => {
+            state_population_gotten.set(key, 0)
+        })
+        named_states = new Map()
+        total_electoral_votes = 0
+        total_pop = 0
+        total_counties = 0
+        named_counties = new Map()
+        prev_named_counties = []
+
+        counties.transition().style("fill", "#444");
+        states.transition().style("fill", "none");
+
+        map_tooltip.style("opacity", 0);
+
+        barchart(total_counties, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining",
+        0, "")
+        barchart(total_pop, 331092220, "#pop-chart", "Total population of counties guessed", "Population remaining",
+        0, "")
+
+        document.getElementById("counties_named").innerHTML = 0;
+        document.getElementById("total_population").innerHTML = 0;
+        document.getElementById("input_bar").value = "";
+        document.getElementById("Error").innerHTML = "<br/>";
+
+        if (curr !== null) {
+            let state_total = state_totals.get(curr_state)
+            barchart(0, state_total, "#vote-chart", "Total population of counties guessed in " + curr_state, "Population remaining in " + curr_state,
+                0, "")
+
+            document.getElementById("total_votes").innerHTML = `The total population of counties named in ${curr_state} is:  
+                0 / ${state_total.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,")}`;
+        } else {
+            barchart(0, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining", 0, "");
+            document.getElementById("total_votes").innerHTML = `The total electoral votes won is: 0 / 538`;
+        }
+    }
+}
+
+d3.select("#finish-btn").on("click", finish);
+
+function finish() {
+    if (confirm(`Are you sure you want to finish the game? This action cannot be undone.
+    \nTo restart after finishing, press the "Clear All Counties" button.`)) {
+        finished = true;
+        d3.select("#input-div").style("opacity", 0);
+        d3.select("#input-div").style("pointer-events", "none");
+        d3.select("#Error").style("display", "none");
+        document.getElementById("Error").innerHTML = "<br/>";
+        d3.select("#finish-text").style("display", "block");
+        d3.select("#website").style("display", "block");
+    }
+}
+
+d3.select("#question").on("click", function () {
+    d3.select("#question").style("display", "none")
+});
+
+d3.select("#question").on("mouseenter", function () {
+    d3.select("#question").style("opacity", 0.5);
+});
+
+d3.select("#question").on("mouseleave", function () {
+    d3.select("#question").style("opacity", 1);
+});
+
+d3.select("#website").on("mouseleave", function () {
+    window.open("https://www.wutony.com");
+    d3.select("#website").style("font-size", "32px");
+    d3.select("#website").style("opacity", 1);
+});
+
+d3.select("#website").on("mouseenter", function () {
+    d3.select("#website").style("opacity", 0.5);
+    d3.select("#website").transition().style("font-size", "40px");
+});
+
+d3.select("#website").on("mouseleave", function () {
+    d3.select("#website").style("opacity", 1)
+    d3.select("#website").transition().style("font-size", "32px");
+});
+

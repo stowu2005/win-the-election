@@ -13,16 +13,31 @@
 <script src="https://d3js.org/topojson.v2.min.js"></script>
 
 <body>
+    <h1 id="question" style="text-align: center; position:fixed; writing-mode: vertical-rl;
+        top: 50%; transform: translateY(-50%); right: -5px; cursor: pointer;">
+        Can you win the election?
+    </h1>
+    <h1 id="website" style="display:none; text-align: center; position:fixed; writing-mode:
+        vertical-rl; top: 50%; transform: translateY(-50%) rotate(-180deg); left: -5px; cursor: pointer;">
+        www.wutony.com
+    </h1>
+    <button id="openPopup" class="open-btn">?</button>
     <div>
         <p> The number of counties named is: <span id="counties_named">0</span> / 3,142</p>
         <div id="bar-chart" style="margin-bottom: 2.5vw;"></div>
         <p style="text-align:center;">The total population of counties named is: <span id="total_population">0</span> / 331,092,220</p>
         <div id="pop-chart" style="margin-bottom: 2.5vw;"></div>
-        <form style="text-align:center;" action="javascript:submit()" autocomplete="off">
-            <label for="input_bar">Type a county:</label><br/>
-            <input type="text" id="input_bar" name="input_bar" placeholder="e.g. &quot;Los Angeles&quot;, &quot;Cook&quot;"><br/>
-        </form>
-        <p style="text-align:center; margin-bottom: -.5vw;" id="Error"><br/></p>
+        <p style="text-align:center; margin-bottom: -1vw; display: none;" id="finish-text">Thank you for playing!</p>
+        <div style="display: flex; justify-content: center;" id="input-div">
+            <button id="" style="opacity:0; pointer-events: none; margin-right:10px">Finish</button>
+            <form style="text-align:center; display: inline-block;" action="javascript:submit()" autocomplete="off">
+                <label for="input_bar">Enter a county:</label><br/>
+                <input type="text" id="input_bar" name="input_bar" placeholder="e.g. &quot;Los Angeles&quot;, &quot;Cook&quot;"><br/>
+            </form>
+            <button id="finish-btn" style="margin-left:10px; cursor: pointer; height: 21.5px; margin-top:18.5px">Finish</button>
+
+        </div>
+        <p style="text-align:center; margin-bottom: -1vw; display: block;" id="Error"><br/></p>
     <br/>
     </div>
     <div class="svg-container" id="svg-map-container">
@@ -37,11 +52,55 @@
         </svg>
     </div>
     <div id="checkbox-div">
-    <input type="checkbox" id="prev_named" value="Yes" checked="true" style="text-align:center;">
-  <label for="prev_named"> Show Last Named Counties</label>
+        <button id="prev_named_btn" style="margin-right: 15px; cursor: pointer;">
+            <input type="checkbox" id="prev_named" value="Yes" checked="true" style="pointer-events: none;">
+            <label for="prev_named" style="pointer-events: none; font-size: 17px;"> Show Last Named Counties</label>
+        </button>
+
+        <button id="clear_btn" style="font-size: 17px; cursor: pointer;">Clear All Counties</button>
   </div>
     <p style="text-align:center; margin-top: 2.5vw;"><span id="total_votes">The total electoral votes won is: 0 / 538</span></p>
-        <div id="vote-chart" style="margin-bottom: 2.5vw;"></div>
+    <div id="vote-chart" style="margin-bottom: 2.5vw;"></div>
+    
+    <div id="overlay" class="overlay"></div>
+    <div id="popup" class="popup">
+        <button id="closePopup" class="close-btn">&#x00d7</button>
+        <h2 style="margin-top: -2px; margin-bottom: 30px;">How to play:</h2>
+        <p>Type in the name of a county in the search bar (submit with enter). All counties with that name will display on the map.
+            If a name is invalid, an error will be displayed.
+        </p>
+        </br>
+        <p>Once a state has more than half its population guessed, it will be considered &quot;won&quot;.</p>
+        <p>At that point, its electoral votes will be added to the total, and it will be displayed with a red hue.</p>
+        <p>The goal is to reach 270 electoral votes, with the amount of electoral votes is shown on the bar at the bottom.
+            When 270 (or more) electoral votes are won, you will be notified.</p>
+        </br>
+        <p>Bar charts at the top show general statistics, like total counties named and the population of those counties.</p>
+        </br>
+        <p>Clicking on a county will zoom in on it, and the bottom bar chart will display the population statistics for the state.</p>
+        <p>Clicking on it again will return it back to the default view and the electoral vote bar chart.</p>
+        </br>
+        <p>Hovering over a named county will show general facts about the county.</p>
+        <p>Hovering over a bar in the bar chart will show specific statistics for that bar.</p>
+        </br>
+        <p>Toggling the &quot;Show Last Named Counties&quot; checkbox will make the last named counties
+            appear in yellow (along with their corresponding data in the bars).</p>
+        </br>
+        <p>Clicking the &quot;Clear All Counties&quot; button will reset the bars and the map to a blank state. It cannot be undone.</p>
+        </br>
+        <p>Once you feel like you have named enough counties, click the 
+            &quot;Finish&quot; button next to the search bar. This ends the game, and you will be able to see all the counties you missed.
+            </p>
+            <p>Afterwards, clicking the &quot;Clear All Counties&quot; button will restart the game.</p>
+        </br>
+        <p>To re-open this pop-up, click the orange question mark on the upper right corner of the screen.</p>
+        </br>
+        <p>If you're ready to begin, click the red X in the corner. Have fun!</p>
+
+    </div>
+
+
+    <script src="popup.js"></script>
     <script src="main.js"></script>
 
 
