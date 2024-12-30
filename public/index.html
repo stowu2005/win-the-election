@@ -27,23 +27,67 @@
         <div id="bar-chart" style="margin-bottom: 2.5vw;"></div>
         <p style="text-align:center;">The total population of counties named is: <span id="total_population">0</span> / 331,092,220</p>
         <div id="pop-chart" style="margin-bottom: 2.5vw;"></div>
-        <p style="text-align:center; margin-bottom: -1vw; display: none;" id="finish-text">Thank you for playing!</p>
+        <p style="text-align:center; margin-bottom: calc(-1vw - 4px); display: none;" id="finish-text">Thank you for playing!</p>
         <div style="display: flex; justify-content: center;" id="input-div">
-            <button id="" style="opacity:0; pointer-events: none; margin-right:10px">Finish</button>
+            <button id="" style="opacity:0; pointer-events: none; margin-right:10px">Finish</button> <!-- For spacing only -->
+            <div style="margin-right: 10px; margin-top: 18.5px; position: relative;">
+                <span class="circle" id="color-picker" style="background-color: red;"></span>
+                <div style="position: absolute; border-style: solid; border-radius: 10px; border-width: 2.5px;
+                    background-color: white; right: -7px; top: 30px; padding-top: 5px;
+                    height: 158px; text-align:center; width: 30px; display: none" id="color-picker-div">
+                    <span class="circle-select" id="color-picker-red" style="background-color: red; border-color: rgb(155, 155, 0);"></span>
+                    <span class="circle-select" id="color-picker-blue" style="background-color: blue; "></span>
+                    <span class="circle-select" id="color-picker-green" style="background-color: green; "></span>
+                    <span class="circle-select" id="color-picker-purple" style="background-color: purple;"></span>
+                    <span class="circle-select" id="color-picker-orange" style="background-color: orange;"></span>
+                </div>
+            </div>
             <form style="text-align:center; display: inline-block;" action="javascript:submit()" autocomplete="off">
                 <label for="input_bar">Enter a county:</label><br/>
                 <input type="text" id="input_bar" name="input_bar" placeholder="e.g. &quot;Los Angeles&quot;, &quot;Cook&quot;"><br/>
             </form>
             <button id="finish-btn" style="margin-left:10px; cursor: pointer; height: 21.5px; margin-top:18.5px">Finish</button>
+            <!-- For spacing only -->
+            <div style="margin-left: 10px; margin-top: 18.5px; position: relative; opacity: 0; pointer-events: none;">
+                <span class="circle" id="color-picker" style="background-color: red;"></span>
+            </div>
 
         </div>
-        <p style="text-align:center; margin-bottom: -1vw; display: block;" id="Error"><br/></p>
+        <p style="text-align:center; margin-bottom: -1vw; display: block; margin-top: -4px;" id="Error"><br/></p>
     <br/>
     </div>
     <div class="svg-container" id="svg-map-container">
         <svg id="map">
-            <pattern id="diagonalHatch" patternUnits="userSpaceOnUse" width="32" height="32">
+            <pattern id="reddiagonalHatch" patternUnits="userSpaceOnUse" width="32" height="32">
                 <rect width="32" height="32" fill="red" />
+                <path d="M-8,8 l16,-16
+                        M0,32 l32,-32
+                        M24,40 l16,-16"
+                      style="stroke:yellow; stroke-width:8;" />
+              </pattern>
+              <pattern id="bluediagonalHatch" patternUnits="userSpaceOnUse" width="32" height="32">
+                <rect width="32" height="32" fill="blue" />
+                <path d="M-8,8 l16,-16
+                        M0,32 l32,-32
+                        M24,40 l16,-16"
+                      style="stroke:yellow; stroke-width:8;" />
+              </pattern>
+              <pattern id="greendiagonalHatch" patternUnits="userSpaceOnUse" width="32" height="32">
+                <rect width="32" height="32" fill="green" />
+                <path d="M-8,8 l16,-16
+                        M0,32 l32,-32
+                        M24,40 l16,-16"
+                      style="stroke:yellow; stroke-width:8;" />
+              </pattern>
+              <pattern id="purplediagonalHatch" patternUnits="userSpaceOnUse" width="32" height="32">
+                <rect width="32" height="32" fill="purple" />
+                <path d="M-8,8 l16,-16
+                        M0,32 l32,-32
+                        M24,40 l16,-16"
+                      style="stroke:yellow; stroke-width:8;" />
+              </pattern>
+              <pattern id="orangediagonalHatch" patternUnits="userSpaceOnUse" width="32" height="32">
+                <rect width="32" height="32" fill="orange" />
                 <path d="M-8,8 l16,-16
                         M0,32 l32,-32
                         M24,40 l16,-16"
@@ -65,13 +109,13 @@
     <div id="overlay" class="overlay"></div>
     <div id="popup" class="popup">
         <button id="closePopup" class="close-btn">&#x00d7</button>
-        <h2 style="margin-top: -2px; margin-bottom: 30px;">How to play:</h2>
+        <h1 style="margin-top: -2px; margin-bottom: 30px;">How to play:</h1>
         <p>Type in the name of a county in the search bar (submit with enter). All counties with that name will display on the map.
             If a name is invalid, an error will be displayed.
         </p>
         </br>
         <p>Once a state has more than half its population guessed, it will be considered &quot;won&quot;.</p>
-        <p>At that point, its electoral votes will be added to the total, and it will be displayed with a red hue.</p>
+        <p>At that point, its electoral votes will be added to the total, and it will be displayed with a hue.</p>
         <p>The goal is to reach 270 electoral votes, with the amount of electoral votes is shown on the bar at the bottom.
             When 270 (or more) electoral votes are won, you will be notified.</p>
         </br>
@@ -82,6 +126,8 @@
         </br>
         <p>Hovering over a named county will show general facts about the county.</p>
         <p>Hovering over a bar in the bar chart will show specific statistics for that bar.</p>
+        </br>
+        <p>To change the color of the named counties, use the dropdown by clicking the circle located next to the search bar.</p>
         </br>
         <p>Toggling the &quot;Show Last Named Counties&quot; checkbox will make the last named counties
             appear in yellow (along with their corresponding data in the bars).</p>

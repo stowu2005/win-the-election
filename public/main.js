@@ -22,6 +22,15 @@ let map_tooltip
 let checked = true
 let won = false
 let finished = false
+let color = "red"
+let colorMap = new Map([
+    ["red", "rgba(255, 0, 0, 0.4)"], 
+    ["blue", "rgba(0, 0, 255, 0.4)"],
+    ["green", "rgba(0, 255, 0, 0.4)"],
+    ["purple", "rgba(128, 0, 128, 0.4)"],
+    ["orange", "rgba(255, 165, 0, 0.4)"],
+    ])
+let colorSelection = false
 
 
 async function fetchJSONData() {
@@ -114,7 +123,7 @@ async function fetchJSONData() {
 
         const outline = g.append("g")
             .attr("fill", "none")
-            .attr("stroke", "blue")
+            .attr("stroke", "black")
             .attr("stroke-linejoin", "round")
             .attr("stroke-width", 0)
             .attr("cursor", "pointer")
@@ -197,6 +206,11 @@ async function fetchJSONData() {
 
         function hover(event, d, this_county) {
             let tooltip_opacity = 0.8
+            if (color === "orange") {
+                tooltip_opacity = 0.9
+            } else if (color === "blue") {
+                tooltip_opacity = 0.7
+            }
             if (this_county.style('fill') === "rgb(255, 255, 0)") {
                 this_county
                 .style("opacity", 0)
@@ -254,7 +268,7 @@ function submit() {
     d_list = counties_array.filter((d) => fips.includes(d.__data__.id))
     for (const d of prev_named_counties) {
         d3.select(d).transition()
-            .style("fill", "red");
+            .style("fill", color);
     }
     prev_named_counties = d_list
     let prev_named = 0
@@ -272,7 +286,7 @@ function submit() {
             .style("fill", "yellow");
         } else {
             d3.select(d).transition()
-            .style("fill", "red");
+            .style("fill", color);
         }
     }
     total_pop += prev_named_pop
@@ -283,7 +297,7 @@ function submit() {
             if (state_population_gotten.get(state) * 2 >= state_totals.get(state)) {
                 named_states.set(state, 1)
                 total_electoral_votes += state_electoral_votes.get(state)
-                d3.select(states_map.get(state)).transition().style("fill", "red");
+                d3.select(states_map.get(state)).transition().style("fill", color);
                 if (!won && total_electoral_votes >= 270) {
                     won = true
                     should_alert = true
@@ -378,7 +392,7 @@ function barchart(percentage, total_percentage, bar_chart, label1, label2, recen
         .attr('class', 'bartooltip')
 
     const data = [
-        { label: `${label1}`, value: bar_percentage, left: 0, color: 'red',
+        { label: `${label1}`, value: bar_percentage, left: 0, color: color,
             percentage: `(${(100 * percentage/total_percentage).toFixed(2)}\%)`},
         { label: `${label3}`, value: recent_percentage, left: bar_percentage, color: 'yellow',
             percentage: `(${(100 * recent_percentage/total_percentage).toFixed(2)}\%)`},
@@ -396,14 +410,14 @@ function barchart(percentage, total_percentage, bar_chart, label1, label2, recen
         .attr('height', 100)
         .attr('fill', function (d) {
             if (d.color === "yellow") {
-                return "url(#diagonalHatch)"
+                return `url(#${color}diagonalHatch)`
             }
             return d.color
         })
         .on("mouseenter", function (event, d) {
             let d_pop = d.value
             d3.select(this).style("opacity", 0.4)
-            if (d.color === 'red') {
+            if (d.color === color) {
                 d_pop = percentage
                 d3.select(this.nextSibling).style("opacity", 0.4)
             } else if (d.color === 'yellow') {
@@ -422,7 +436,7 @@ function barchart(percentage, total_percentage, bar_chart, label1, label2, recen
         tooltip.style('top', (event.pageY - 20) + 'px')
             .style('left', (event.pageX + 10) + 'px');
     }).on("mouseout", function (event, d) {
-        if (d.color === 'red') {
+        if (d.color === color) {
             d3.select(this.nextSibling).style("opacity", 1)
         }
         d3.select(this).style("opacity", 1)
@@ -430,11 +444,13 @@ function barchart(percentage, total_percentage, bar_chart, label1, label2, recen
     });
 }
 
-d3.select("#prev_named_btn").on("click", update);
+d3.select("#prev_named_btn").on("click", function(){
+    checked = !(document.getElementById("prev_named").checked);
+    document.getElementById("prev_named").checked = checked;
+    update();
+});
 
 function update() {
-    checked = !(document.getElementById("prev_named").checked)
-    document.getElementById("prev_named").checked = checked
     if (checked === false) {
         if (curr !== null) {
             let state_gotten = state_population_gotten.get(curr_state)
@@ -444,7 +460,7 @@ function update() {
         }
         for (const d of prev_named_counties) {
             d3.select(d).transition()
-                .style("fill", "red");
+                .style("fill", color);
         }
         barchart(total_counties, 3142, "#bar-chart", "Number of counties guessed", "Number of counties remaining",
         0, "")
@@ -577,3 +593,59 @@ d3.select("#website").on("mouseleave", function () {
     d3.select("#website").transition().style("font-size", "32px");
 });
 
+d3.select("#color-picker").on("mouseenter", function () {
+    d3.select("#color-picker").style("background-color", `${colorMap.get(color)}`);
+});
+
+d3.select("#color-picker").on("mouseleave", function () {
+    d3.select("#color-picker").style("background-color", `${color}`);
+});
+
+d3.select("#color-picker").on("click", function () {
+    if (colorSelection) {
+        d3.select("#color-picker").transition().style("border-color", "#444");
+        d3.select("#color-picker-div").transition().style("display", "none");
+    } else {
+        d3.select("#color-picker").transition().style("border-color", "rgb(155, 155, 0)");
+        d3.select("#color-picker-div").transition().style("display", "block");
+    }
+    colorSelection = !colorSelection
+});
+
+d3.selectAll(".circle-select").on("mouseenter", function () {
+    d3.select(this).transition().style("width", "21.5px")
+    .style("height", "21.5px").style("margin-top", "1px").style("margin-bottom", "1px");   
+});
+
+d3.selectAll(".circle-select").on("mouseleave", function () {
+    d3.select(this).transition().style("width", "17.5px")
+        .style("height", "17.5px").style("margin-top", "3px").style("margin-bottom", "3px");
+});
+
+d3.selectAll(".circle-select").on("click", function () {
+    colorSelection = false;
+    if (color !== d3.select(this).style("background-color")) {
+        color = d3.select(this).style("background-color");
+        d3.selectAll(".circle-select").style("border-color", "#444");
+        d3.select(this).style("border-color", "rgb(155, 155, 0)");
+        changeColor();
+    }
+    d3.select("#color-picker").transition().style("border-color", "#444").style("background-color", color);
+    d3.select("#color-picker-div").transition().style("display", "none");
+});
+
+function changeColor() {
+    named_states.forEach((value, key) => {
+        d3.select(states_map.get(key)).transition().style("fill", color);
+    })
+    named_counties.forEach((value, key) => {
+        for (const d of value) {
+            d3.select(d).transition()
+                .style("fill", color);
+        }
+    })
+    update();
+    if (curr === null) {
+        barchart(total_electoral_votes, 538, "#vote-chart", "Electoral Votes Won", "Electoral Votes remaining", 0, "");
+    } 
+}
