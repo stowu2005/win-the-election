@@ -577,7 +577,7 @@ d3.select("#question").on("mouseleave", function () {
     d3.select("#question").style("opacity", 1);
 });
 
-d3.select("#website").on("mouseleave", function () {
+d3.select("#website").on("click", function () {
     window.open("https://www.wutony.com");
     d3.select("#website").style("font-size", "32px");
     d3.select("#website").style("opacity", 1);
