@@ -34,3 +34,13 @@ overlay.addEventListener('click', () => {
     popup.style.display = 'none';
     overlay.style.display = 'none';
 });
+
+// Confirm with user before closing page
+window.onbeforeunload = function (e) {
+    // For backwards compatibility
+    e = e || window.event;
+    if (e) {
+        e.returnValue = null;
+    }
+    return "";
+};
